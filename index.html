@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#707e75">
+<title>Prayer Tracking</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --hdr:#707e75;--bg:#ffffff;--card:#f6f7f1;--bd:#e0e5dc;--tx:#2c3a32;--mute:#8a9b90;--cell:#ffffff;
+  --p:#dde9c0;--q:#e9d096;--r:#e4bbe4;--w:#bfd3ea;--ink:#1f2622;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hdr:#3f4842;--bg:#1d2120;--card:#282d2a;--bd:#363d39;--tx:#e6ebe4;--mute:#8fa094;--cell:#252a27}}
+:root[data-theme="dark"]{--hdr:#3f4842;--bg:#1d2120;--card:#282d2a;--bd:#363d39;--tx:#e6ebe4;--mute:#8fa094;--cell:#252a27}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font-family:Lato,"Segoe UI",Roboto,system-ui,sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column}
+header{background:var(--hdr);color:#fff;padding:14px 18px 12px;flex:none}
+.top{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.22)}
+.top h1{font-size:22px;margin:0;font-weight:700;flex:1}
+.circ{width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.75);background:none;color:#fff;display:grid;place-items:center;cursor:pointer;padding:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);text-align:center;margin-top:12px;font-size:13px;color:rgba(255,255,255,.8)}
+.stats .chip{width:min(72px,80%);height:34px;border-radius:8px;margin:7px auto 6px;display:grid;place-items:center;color:var(--ink)}
+.stats b{display:block;font-size:16px;color:#fff;font-weight:400}
+.seg{display:flex;justify-content:center;gap:6px;margin-top:10px}
+.seg button{border:1px solid rgba(255,255,255,.5);background:none;color:#fff;border-radius:16px;padding:5px 14px;font:inherit;font-size:12.5px;cursor:pointer}
+.seg button.on{background:#fff;color:var(--hdr)}
+.nav{margin:10px 8px 8px;background:var(--card);border:1px solid var(--bd);border-radius:12px;display:flex;align-items:center;justify-content:center;gap:34px;padding:7px;flex:none}
+.nav span{font-size:19px;min-width:170px;text-align:center}
+.nav button{width:36px;height:36px;border-radius:50%;border:0;background:var(--hdr);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0}
+.grid{display:grid;grid-template-columns:1.6fr repeat(5,1fr);gap:5px;padding:0 8px}
+.colh{flex:none;padding-bottom:6px}
+.colh div{background:var(--card);border:1px solid var(--bd);border-radius:10px;text-align:center;padding:9px 0;font-size:13.5px;color:var(--tx);overflow:hidden}
+.colh div:first-child{color:var(--mute)}
+#list{flex:1;overflow-y:auto;position:relative;padding-bottom:30px;-webkit-overflow-scrolling:touch}
+.row{margin-bottom:5px;position:relative}
+.d{background:var(--card);border:1px solid var(--bd);border-radius:10px;display:grid;place-items:center;color:var(--mute);font-size:14px;height:42px;white-space:nowrap}
+.row.today .d{color:var(--tx);font-weight:700;border-color:var(--hdr)}
+.c{height:42px;border-radius:10px;border:1px solid var(--bd);background:var(--cell);display:grid;place-items:center;padding:0;cursor:pointer;color:var(--ink)}
+.c.p{background:var(--p);border-color:transparent}.c.q{background:var(--q);border-color:transparent}
+.c.r{background:var(--r);border-color:transparent}.c.w{background:var(--w);border-color:transparent}
+svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.row.act{z-index:20}
+.row.act .d{background:#f7f9f2;color:#7f9a88}
+.row.act .c:not(.p):not(.q):not(.r):not(.w){background:#fff}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10}
+#pop{position:fixed;z-index:30;background:#fff;border-radius:16px;padding:16px;display:flex;gap:8px;width:min(92vw,400px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+#pop button{flex:1;height:50px;border:0;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:#1f2622;padding:0}
+#pop i{position:absolute;width:16px;height:16px;background:#fff;transform:rotate(45deg);bottom:-6px}
+#pop.below i{bottom:auto;top:-6px}
+[hidden]{display:none!important}
+#dlg{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:20px}
+#dlg .box{background:var(--bg);color:var(--tx);border-radius:16px;padding:18px;width:min(100%,420px)}
+#dlg h2{margin:0 0 6px;font-size:18px}#dlg p{margin:0 0 10px;font-size:13.5px;color:var(--mute)}
+#dlg textarea{width:100%;height:150px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:12px monospace;padding:8px;resize:none}
+.btns{display:flex;gap:8px;margin-top:10px}
+.btns button{flex:1;border:0;border-radius:10px;padding:11px;font:inherit;font-size:14px;background:var(--hdr);color:#fff;cursor:pointer}
+.btns button.alt{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+#msg{font-size:13px;min-height:18px;margin-top:8px;color:var(--hdr)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="top"><h1>Prayer Tracking</h1>
+      <button class="circ" id="bk" aria-label="Backup and restore"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></button></div>
+    <div class="stats" id="stats"></div>
+    <div class="seg"><button id="sm" class="on">This month</button><button id="sa">All time</button></div>
+  </header>
+  <div class="nav"><button id="pv" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M14.5 6L8.5 12l6 6"/></svg></button><span id="mt"></span><button id="nx" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></svg></button></div>
+  <div class="grid colh"><div>Date</div><div>Fajr</div><div>Dhuhr</div><div>Asr</div><div>Maghrib</div><div>Isha'a</div></div>
+  <div id="list"></div>
+</div>
+<div id="ov" hidden></div>
+<div id="pop" hidden><i></i></div>
+<div id="dlg" hidden><div class="box">
+  <h2>Backup &amp; restore</h2>
+  <p>Copy this text and keep it somewhere safe (e.g. Notes). To restore, paste a saved backup here and tap Restore.</p>
+  <textarea id="ta" spellcheck="false"></textarea>
+  <div class="btns"><button id="cp">Copy</button><button id="rs" class="alt">Restore</button><button id="cl" class="alt">Close</button></div>
+  <div id="msg"></div>
+</div></div>
+<script>
+var IC={
+ p:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+ q:'<svg viewBox="0 0 24 24"><path d="M2.5 12.5l4 4L15 7M9 15l2.5 2.5L21.5 7"/></svg>',
+ r:'<svg viewBox="0 0 24 24"><path d="M12 4.5v9.5M12 19v.6"/></svg>',
+ w:'<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4.5"/><path d="M12 13.5V21M9 18h6"/></svg>',
+ x:'<svg viewBox="0 0 24 24"><path d="M9 5h11v14H9L3 12z"/><path d="M12.5 9.5l5 5M17.5 9.5l-5 5"/></svg>'};
+var COL={p:'#dde9c0',q:'#e9d096',r:'#e4bbe4',w:'#bfd3ea',x:'#aaaaaa'};
+var MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
+var KEY='prayer_tracker_v1',data={},scope='m',sel=null;
+var now=new Date(),vy=now.getFullYear(),vm=now.getMonth();
+try{data=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){data={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+function pad(n){return (n<10?'0':'')+n}
+function dk(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d)}
+var $=function(i){return document.getElementById(i)};
+
+function stats(){
+  var c={p:0,q:0,r:0,w:0},pre=vy+'-'+pad(vm+1)+'-';
+  for(var k in data){ if(scope==='m'&&k.indexOf(pre)!==0)continue; data[k].forEach(function(v){if(c[v]!==undefined)c[v]++}) }
+  var L={p:'Performed',q:'Qadha Done',r:'Required',w:'For Woman'};
+  $('stats').innerHTML=['p','q','r','w'].map(function(t){return '<div>'+L[t]+'<div class="chip" style="background:'+COL[t]+'">'+IC[t]+'</div><b>'+c[t]+'</b></div>'}).join('');
+}
+function render(){
+  $('mt').textContent=MN[vm]+' '+vy;
+  var n=new Date(vy,vm+1,0).getDate(),h='',td=dk(now.getFullYear(),now.getMonth(),now.getDate());
+  for(var d=1;d<=n;d++){
+    var k=dk(vy,vm,d),a=data[k]||[];
+    h+='<div class="grid row'+(k===td?' today':'')+'" data-k="'+k+'"><div class="d">'+d+' '+MS[vm]+' '+String(vy).slice(2)+'</div>';
+    for(var i=0;i<5;i++){var v=a[i]||'';h+='<button class="c '+v+'" data-i="'+i+'">'+(v?IC[v]:'')+'</button>'}
+    h+='</div>';
+  }
+  $('list').innerHTML=h; stats();
+  var t=$('list').querySelector('.today');
+  $('list').scrollTop=t?Math.max(0,t.offsetTop-$('list').clientHeight/3):0;
+}
+function closePop(){$('ov').hidden=true;$('pop').hidden=true;var a=document.querySelector('.row.act');if(a)a.classList.remove('act');sel=null}
+function openPop(cell){
+  var row=cell.parentNode;sel={k:row.dataset.k,i:+cell.dataset.i};row.classList.add('act');
+  var pop=$('pop');
+  pop.innerHTML='<i></i>'+['p','q','r','w','x'].map(function(t){return '<button data-t="'+t+'" style="background:'+COL[t]+'">'+IC[t]+'</button>'}).join('');
+  $('ov').hidden=false;pop.hidden=false;pop.classList.remove('below');
+  var r=cell.getBoundingClientRect(),pw=pop.offsetWidth,ph=pop.offsetHeight;
+  var left=Math.max(8,Math.min(innerWidth-pw-8,r.left+r.width/2-pw/2)),top=r.top-ph-12;
+  if(top<8){top=r.bottom+12;pop.classList.add('below')}
+  pop.style.left=left+'px';pop.style.top=top+'px';
+  pop.querySelector('i').style.left=Math.max(14,Math.min(pw-30,r.left+r.width/2-left-8))+'px';
+}
+$('list').addEventListener('click',function(e){var c=e.target.closest('.c');if(c)openPop(c)});
+$('pop').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b||!sel)return;
+  var t=b.dataset.t,a=data[sel.k]||['','','','',''];a[sel.i]=t==='x'?'':t;
+  if(a.every(function(v){return !v}))delete data[sel.k];else data[sel.k]=a;
+  save();var s=sel.k,i=sel.i;closePop();
+  var row=$('list').querySelector('[data-k="'+s+'"]'),cell=row.querySelectorAll('.c')[i],v=(data[s]||[])[i]||'';
+  cell.className='c '+v;cell.innerHTML=v?IC[v]:'';stats();
+});
+$('ov').addEventListener('click',closePop);
+function go(d){closePop();vm+=d;if(vm<0){vm=11;vy--}if(vm>11){vm=0;vy++}render()}
+$('pv').onclick=function(){go(-1)};$('nx').onclick=function(){go(1)};
+$('sm').onclick=function(){scope='m';$('sm').className='on';$('sa').className='';stats()};
+$('sa').onclick=function(){scope='a';$('sa').className='on';$('sm').className='';stats()};
+$('bk').onclick=function(){$('ta').value=JSON.stringify(data);$('msg').textContent='';$('dlg').hidden=false};
+$('cl').onclick=function(){$('dlg').hidden=true};
+$('cp').onclick=function(){
+  var ta=$('ta');ta.value=JSON.stringify(data);ta.select();
+  try{navigator.clipboard.writeText(ta.value).then(function(){$('msg').textContent='Copied.'},function(){document.execCommand('copy');$('msg').textContent='Copied.'})}
+  catch(e){try{document.execCommand('copy');$('msg').textContent='Copied.'}catch(x){$('msg').textContent='Select the text and copy it manually.'}}
+};
+$('rs').onclick=function(){
+  try{var o=JSON.parse($('ta').value);if(!o||typeof o!=='object'||Array.isArray(o))throw 0;
+    for(var k in o){if(!/^\d{4}-\d{2}-\d{2}$/.test(k)||!Array.isArray(o[k]))throw 0}
+    data=o;save();render();$('msg').textContent='Backup restored.'}
+  catch(e){$('msg').textContent='That text is not a valid backup. Paste the full text and try again.'}
+};
+render();
+try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
+</script>
+</body>
+</html>
